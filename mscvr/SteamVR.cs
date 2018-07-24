@@ -4,6 +4,7 @@
 //
 //=============================================================================
 
+using System.Runtime.InteropServices;
 using UnityEngine;
 using Valve.VR;
 
@@ -280,10 +281,10 @@ public class SteamVR : System.IDisposable
 		textureBounds[1].uMin = 0.5f + 0.5f * r_left / tanHalfFov.x;
 		textureBounds[1].uMax = 0.5f + 0.5f * r_right / tanHalfFov.x;
 		textureBounds[1].vMin = 0.5f - 0.5f * r_bottom / tanHalfFov.y;
-		textureBounds[1].vMax = 0.5f - 0.5f * r_top / tanHalfFov.y;
+		textureBounds[1].vMax = 0.5f - 0.5f * r_top / tanHalfFov.y;       
 
-		// Grow the recommended size to account for the overlapping fov
-		sceneWidth = sceneWidth / Mathf.Max(textureBounds[0].uMax - textureBounds[0].uMin, textureBounds[1].uMax - textureBounds[1].uMin);
+        // Grow the recommended size to account for the overlapping fov
+        sceneWidth = sceneWidth / Mathf.Max(textureBounds[0].uMax - textureBounds[0].uMin, textureBounds[1].uMax - textureBounds[1].uMin);
 		sceneHeight = sceneHeight / Mathf.Max(textureBounds[0].vMax - textureBounds[0].vMin, textureBounds[1].vMax - textureBounds[1].vMin);
 
 		aspect = tanHalfFov.x / tanHalfFov.y;
@@ -330,5 +331,26 @@ public class SteamVR : System.IDisposable
 		if (_instance != null)
 			_instance.Dispose();
 	}
+
+    // Unityhooks in openvr_api.
+    public class Unity {
+        public const int k_nRenderEventID_WaitGetPoses = 201510020;
+        public const int k_nRenderEventID_SubmitL = 201510021;
+        public const int k_nRenderEventID_SubmitR = 201510022;
+        public const int k_nRenderEventID_Flush = 201510023;
+        public const int k_nRenderEventID_PostPresentHandoff = 201510024;
+
+        [DllImport("openvr_api", EntryPoint = "UnityHooks_GetRenderEventFunc")]
+        public static extern System.IntPtr GetRenderEventFunc();
+
+        [DllImport("openvr_api", EntryPoint = "UnityHooks_SetSubmitParams")]
+        public static extern void SetSubmitParams(VRTextureBounds_t boundsL, VRTextureBounds_t boundsR, EVRSubmitFlags nSubmitFlags);
+
+        [DllImport("openvr_api", EntryPoint = "UnityHooks_SetColorSpace")]
+        public static extern void SetColorSpace(EColorSpace eColorSpace);
+
+        [DllImport("openvr_api", EntryPoint = "UnityHooks_EventWriteString")]
+        public static extern void EventWriteString([In, MarshalAs(UnmanagedType.LPWStr)] string sEvent);
+    }
 }
 

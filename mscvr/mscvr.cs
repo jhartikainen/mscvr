@@ -7,6 +7,8 @@ namespace mscvr {
     public class mscvr : Mod {
         private GameObject vrCamera;
         private CVRSystem vrSystem;
+        private RenderTexture renderTexture;
+        private Texture_t textureStruct;
 
         public override string ID => "mscvr";
         public override string Name => "MSC VR";
@@ -21,21 +23,41 @@ namespace mscvr {
         public override void OnLoad() {
             ModConsole.Print("Initializing OpenVR");
             OpenVRInit();
-            ModConsole.Print("Initializing SteamVR");
+            ModConsole.Print("Set up camera render texture");
+
+            uint w = 0, h = 0;
+            vrSystem.GetRecommendedRenderTargetSize(ref w, ref h);
+
+            renderTexture = new RenderTexture((int)w, (int)h, 16);
+            Camera.main.targetTexture = renderTexture;
+
+            textureStruct = new Texture_t();
+            textureStruct.eColorSpace = EColorSpace.Linear;
+            textureStruct.eType = ETextureType.DirectX;
+            textureStruct.handle = renderTexture.GetNativeTexturePtr();
+
+            Camera.onPostRender += PostRender;
+
+            /*ModConsole.Print("Initializing SteamVR");
             ModConsole.Print(SteamVR.instance);
 
             var fpsController = Camera.main.transform.parent.gameObject;
 
-            var vrObject = new GameObject("VR Junk");
+            var vrRoot = new GameObject("VR root");
+            var player = vrRoot.AddComponent<Player>();
+            player.trackingOriginTransform = player.transform;
 
-            var player = fpsController.AddComponent<Player>();
+            var vrRig = new GameObject("VR rig");
+            player.rigSteamVR = vrRig;
             
-            vrObject.AddComponent<Camera>();
-            var vrCamera = vrObject.AddComponent<SteamVR_Camera>();
+            vrRig.transform.SetParent(vrRoot.transform);
 
-            player.hmdTransforms = new Transform[] { vrCamera.transform };
+            var vrCam = new GameObject("VR camera");
+            vrCam.AddComponent<Camera>();
+            vrCam.transform.SetParent(vrRig.transform);
+            vrCam.AddComponent<SteamVR_Camera>();
 
-            //vrCamera.transform.SetParent(fpsController.transform);
+            player.hmdTransforms = new Transform[] { vrCam.transform };
 
             var handPrefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
             handPrefab.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
@@ -47,16 +69,33 @@ namespace mscvr {
             hand2Component.otherHand = hand1Component;
             hand1Component.controllerPrefab = hand2Component.controllerPrefab = handPrefab;
 
+            hand1.transform.SetParent(vrRig.transform);
+            hand2.transform.SetParent(vrRig.transform);
+
             player.hands = new Hand[] { hand1Component, hand2Component };
 
             //var renderer = fpsController.AddComponent<SteamVR_Render>();
-            ModConsole.Print("Done");
+            OpenVR.Compositor.CompositorBringToFront();
+
+            ModConsole.Print("Done");*/
+        }
+
+        void PostRender(Camera cam) {
+            if(cam != Camera.main) {
+                return;
+            }
+
+            VRTextureBounds_t bounds = new VRTextureBounds_t();
+            bounds.vMin = bounds.uMin = 0;
+            bounds.vMax = bounds.uMax = 1;
+            OpenVR.Compositor.Submit(EVREye.Eye_Left, ref textureStruct, ref bounds, EVRSubmitFlags.Submit_Default);
+            OpenVR.Compositor.Submit(EVREye.Eye_Right, ref textureStruct, ref bounds, EVRSubmitFlags.Submit_Default);
         }
 
         // Update is called once per frame
         public override void Update() {            
-            //OpenVR.Compositor.Submit(EVREye.Eye_Left,)
-        }
+            
+        }       
 
         void OpenVRInit() {
             var error = EVRInitError.None;

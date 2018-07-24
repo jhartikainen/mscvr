@@ -73,8 +73,19 @@ public class SteamVR_Fade : MonoBehaviour
 	{
 		if (fadeMaterial == null)
 		{
-			fadeMaterial = new Material(Shader.Find("Custom/SteamVR_Fade"));
-			fadeMaterialColorID = Shader.PropertyToID("fadeColor");
+            //fadeMaterial = new Material(Shader.Find("Custom/SteamVR_Fade"));
+            fadeMaterial = new Material(@"
+Shader ""Custom / SteamVR_Fade"" {
+SubShader { Pass {
+    Blend SrcAlpha OneMinusSrcAlpha
+
+    ZTest Always Cull Off ZWrite Off Fog { Mode Off }
+
+    BindChannels { Bind ""vertex"", vertex Bind ""color"", color }
+} }
+    }
+");
+            fadeMaterialColorID = Shader.PropertyToID("fadeColor");
 		}
 
 		SteamVR_Events.Fade.Listen(OnStartFade);

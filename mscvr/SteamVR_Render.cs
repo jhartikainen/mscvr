@@ -170,9 +170,9 @@ public class SteamVR_Render : MonoBehaviour
                 SteamVR_Camera.GetSceneTexture(cameras[0].GetComponent<Camera>().hdr).GetNativeTexturePtr();
 
                 compositor.GetLastPoses(poses, gamePoses);
-                
-                //SteamVR_Utils.Event.Send("new_poses", poses);
-                //SteamVR_Utils.Event.Send("new_poses_applied");
+
+                SteamVR_Events.NewPoses.Send(poses);
+                SteamVR_Events.NewPosesApplied.Send();                
             }
 
 			var overlay = SteamVR_Overlay.instance;
@@ -381,10 +381,10 @@ public class SteamVR_Render : MonoBehaviour
 #endif
 
     void FixedUpdate() {
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
-		// We want to call this as soon after Present as possible.
-		SteamVR_Utils.QueueEventOnRenderThread(SteamVR.Unity.k_nRenderEventID_PostPresentHandoff);
-#endif
+        // We want to call this as soon after Present as possible.
+        //SteamVR_Utils.QueueEventOnRenderThread(SteamVR.Unity.k_nRenderEventID_PostPresentHandoff);
+        //This is what the above commented out line does:
+        GL.IssuePluginEvent(201510024);
     }
 
     void Update()
