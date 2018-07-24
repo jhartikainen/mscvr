@@ -441,7 +441,7 @@ float4 frag_linear(v2f i) : COLOR {
             if (SteamVR_Render.eye == EVREye.Eye_Left) {
                 // Get gpu started on work early to avoid bubbles at the top of the frame.
                 //OpenVR.Compositor.ClearLastSubmittedFrame();
-                //GL.IssuePluginEvent(SteamVR.Unity.k_nRenderEventID_Flush);
+                GL.IssuePluginEvent(SteamVR.Unity.k_nRenderEventID_Flush);
 
                 eventID = SteamVR.Unity.k_nRenderEventID_SubmitL;
             }
@@ -450,7 +450,7 @@ float4 frag_linear(v2f i) : COLOR {
             }
 
             // Queue up a call on the render thread to Submit our render target to the compositor.            
-            //GL.IssuePluginEvent(eventID);
+            GL.IssuePluginEvent(eventID);
         }
 
         Graphics.SetRenderTarget(dest);
@@ -467,7 +467,7 @@ float4 frag_linear(v2f i) : COLOR {
         GL.End();
         GL.PopMatrix();
 
-        Texture_t tex = new Texture_t();
+        /*Texture_t tex = new Texture_t();
         tex.eColorSpace = EColorSpace.Linear;
         tex.eType = ETextureType.DirectX;
         tex.handle = dest.GetNativeTexturePtr();
@@ -475,7 +475,8 @@ float4 frag_linear(v2f i) : COLOR {
         bounds.vMin = bounds.uMin = 0;
         bounds.vMax = bounds.uMax = 1;
         OpenVR.Compositor.Submit(EVREye.Eye_Left, ref tex, ref bounds, EVRSubmitFlags.Submit_Default);
-        OpenVR.Compositor.Submit(EVREye.Eye_Right, ref tex, ref bounds, EVRSubmitFlags.Submit_Default);
+        OpenVR.Compositor.Submit(EVREye.Eye_Right, ref tex, ref bounds, EVRSubmitFlags.Submit_Default);*/
+
 
         Graphics.SetRenderTarget(null);
     }

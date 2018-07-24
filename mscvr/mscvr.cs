@@ -8,7 +8,11 @@ namespace mscvr {
         private GameObject vrCamera;
         private CVRSystem vrSystem;
         private RenderTexture renderTexture;
-        private Texture_t textureStruct;
+        private Texture_t leftEyeTexture;
+        private Texture_t rightEyeTexture;
+        private RenderTexture rightEyeRT;
+        private Camera vrCam;
+        private bool hadError;
 
         public override string ID => "mscvr";
         public override string Name => "MSC VR";
@@ -20,23 +24,47 @@ namespace mscvr {
         public override bool UseAssetsFolder => false;
 
         //Called when mod is loading
-        public override void OnLoad() {
+        public override void OnLoad() {            
             ModConsole.Print("Initializing OpenVR");
-            OpenVRInit();
-            ModConsole.Print("Set up camera render texture");
+            if (!OpenVRInit()) {
+                return;
+            }
 
+            OpenVR.Compositor.Device
+            ModConsole.Print("Set up camera render texture");            
             uint w = 0, h = 0;
             vrSystem.GetRecommendedRenderTargetSize(ref w, ref h);
 
-            renderTexture = new RenderTexture((int)w, (int)h, 16);
-            Camera.main.targetTexture = renderTexture;
+            renderTexture = new RenderTexture((int)w, (int)h, 0, RenderTextureFormat.ARGB32);
+            renderTexture.useMipMap = false;
+            renderTexture.generateMips = false;
+            renderTexture.enableRandomWrite = true;
+            renderTexture.Create();
 
-            textureStruct = new Texture_t();
-            textureStruct.eColorSpace = EColorSpace.Linear;
-            textureStruct.eType = ETextureType.DirectX;
-            textureStruct.handle = renderTexture.GetNativeTexturePtr();
+            var camObj = new GameObject("VR camera");
+            vrCam = camObj.AddComponent<Camera>();
+            vrCam.targetTexture = renderTexture;
+            
+            leftEyeTexture = new Texture_t() {
+                eColorSpace = EColorSpace.Gamma,
+                eType = ETextureType.DirectX,
+                handle = renderTexture.GetNativeTexturePtr()
+            };
+
+            rightEyeRT = new RenderTexture((int)w, (int)h, 0, RenderTextureFormat.ARGB32);
+            rightEyeRT.useMipMap = false;
+            rightEyeRT.generateMips = false;
+            rightEyeRT.enableRandomWrite = true;
+            rightEyeRT.Create();
+            rightEyeTexture = new Texture_t() {
+                eColorSpace = EColorSpace.Gamma,
+                eType = ETextureType.DirectX,
+                handle = rightEyeRT.GetNativeTexturePtr()
+            };
 
             Camera.onPostRender += PostRender;
+            
+            OpenVR.Compositor.FadeToColor(1f, 0, 0, 0, 255, false);            
 
             /*ModConsole.Print("Initializing SteamVR");
             ModConsole.Print(SteamVR.instance);
@@ -49,6 +77,7 @@ namespace mscvr {
 
             var vrRig = new GameObject("VR rig");
             player.rigSteamVR = vrRig;
+            player.rig2DFallback = new GameObject("VR fallback dummy rig");
             
             vrRig.transform.SetParent(vrRoot.transform);
 
@@ -81,15 +110,39 @@ namespace mscvr {
         }
 
         void PostRender(Camera cam) {
-            if(cam != Camera.main) {
+            if(cam != vrCam || hadError) {
                 return;
             }
 
+            if (!renderTexture.IsCreated()) {
+                ModConsole.Print("RenderTexture failure");
+                hadError = true;
+            }
+
+            Graphics.SetRenderTarget(rightEyeRT);
+            Graphics.DrawTexture(new Rect(0, 0, rightEyeRT.width, rightEyeRT.height), renderTexture);
+            Graphics.SetRenderTarget(null);
+
+            TrackedDevicePose_t[] renderPoses = new TrackedDevicePose_t[3];
+            TrackedDevicePose_t[] gamePoses = new TrackedDevicePose_t[3];
+            OpenVR.Compositor.WaitGetPoses(renderPoses, gamePoses);
+
+            OpenVR.Compositor.SetTrackingSpace(ETrackingUniverseOrigin.TrackingUniverseStanding);
             VRTextureBounds_t bounds = new VRTextureBounds_t();
             bounds.vMin = bounds.uMin = 0;
             bounds.vMax = bounds.uMax = 1;
-            OpenVR.Compositor.Submit(EVREye.Eye_Left, ref textureStruct, ref bounds, EVRSubmitFlags.Submit_Default);
-            OpenVR.Compositor.Submit(EVREye.Eye_Right, ref textureStruct, ref bounds, EVRSubmitFlags.Submit_Default);
+            var compError = OpenVR.Compositor.Submit(EVREye.Eye_Left, ref leftEyeTexture, ref bounds, EVRSubmitFlags.Submit_GlRenderBuffer);
+            if(compError != EVRCompositorError.None) {
+                ModConsole.Print("Compositor left error");
+                ModConsole.Print(compError);
+                hadError = true;
+            }
+            compError = OpenVR.Compositor.Submit(EVREye.Eye_Right, ref rightEyeTexture, ref bounds, EVRSubmitFlags.Submit_GlRenderBuffer);
+            if (compError != EVRCompositorError.None) {
+                ModConsole.Print("Compositor right error");
+                ModConsole.Print(compError);
+                hadError = true;
+            }
         }
 
         // Update is called once per frame
@@ -97,14 +150,18 @@ namespace mscvr {
             
         }       
 
-        void OpenVRInit() {
+        bool OpenVRInit() {
             var error = EVRInitError.None;
             vrSystem = OpenVR.Init(ref error, EVRApplicationType.VRApplication_Scene);
-            if (error != EVRInitError.None) {
+            if (error != EVRInitError.None || !OpenVR.IsHmdPresent()) {
                 ModConsole.Print("Error in VR init");
                 ModConsole.Print(error);
-                return;
+                return false;
             }
+
+            var helper = new GameObject("OpenVRHelper");
+            helper.AddComponent<OpenVRHelper>();
+            return true;
         }
 
         void DeviceReading(ETrackedDeviceClass deviceClass) {
