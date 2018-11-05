@@ -10,16 +10,8 @@ using EasyHook;
 namespace mscvr {
     public class mscvr : Mod {
         private CVRSystem vrSystem;
-        private RenderTexture renderTexture;
-        private Texture_t leftEyeTexture;
-        private Texture_t rightEyeTexture;
-        private Camera vrCam;
-        private bool hadError;
-        private SharpDX.Direct3D11.Texture2D leftRawTexture;
-        private SharpDX.Direct3D11.Texture2D rightRawTexture;
         private SharpDX.Direct3D11.Device d3d11Device;
         private SharpDX.Direct3D11.Device unityRenderer;
-        private SharpDX.Direct3D11.Texture2D renderTextureDx;
 
         private VRRig vrRig;
         private VRRenderer vrRenderer;
@@ -74,8 +66,6 @@ namespace mscvr {
             ModConsole.Print(unityRenderer.CreationFlags & SharpDX.Direct3D11.DeviceCreationFlags.SingleThreaded);
             vrRenderer = new VRRenderer(d3d11Device, unityRenderer, vrRig);
 
-            //Camera.onPostRender += PostRender;
-
             hook.OnRender += HookRender;
 
             System.Diagnostics.Trace.WriteLine("All done");
@@ -86,33 +76,10 @@ namespace mscvr {
             vrRenderer.Render();
         }
 
-        void PostRender(Camera cam) {        
-            if(cam != mainCamera || hadError) {
-                return;
-            }
-
-            vrRenderer.Render();
-
-            //Compositor_FrameTiming timing = new Compositor_FrameTiming();
-            //OpenVR.Compositor.GetFrameTiming(ref timing, 0);
-            //ModConsole.Print(timing.m_nNumFramePresents);
-        }
                 
         public override void FixedUpdate() {
-            //ModConsole.Print(PrintANumber());
-            //GL.IssuePluginEvent(1337);
-
-
-
             //vrRig.Move(mainCamera.transform.position, mainCamera.transform.rotation);
-        }
-
-        public override void Update() {
-            //NEXT: Try again with dx debugging output visible to see hwy the ptr didn't work maybe
-
-
-            //ModConsole.Print(1f / Time.deltaTime);
-        }
+        }     
 
         bool OpenVRInit() {
             var error = EVRInitError.None;
@@ -127,27 +94,9 @@ namespace mscvr {
         }
 
         ~mscvr() {
-            //OpenVR.Shutdown();
-            //vrRig.Dispose();
+            OpenVR.Shutdown();
+            vrRig.Dispose();
+            hook.Dispose();
         }
-
-        void DeviceReading(ETrackedDeviceClass deviceClass) {
-            /*
-
-           for (uint i = 0; i < OpenVR.k_unMaxTrackedDeviceCount; i++) {
-               var deviceClass = vrSystem.GetTrackedDeviceClass(i);
-               if (deviceClass != ETrackedDeviceClass.Invalid) {
-
-                   ModConsole.Print("OpenVR device at " + i + ": " + deviceClass);
-               }
-           }*/
-           /*
-            TrackedDevicePose_t[] poses = new TrackedDevicePose_t[OpenVR.k_unMaxTrackedDeviceCount];
-            vrSystem.GetDeviceToAbsoluteTrackingPose(ETrackingUniverseOrigin.TrackingUniverseStanding, 0, poses);
-
-            //var p = poses[deviceClass];
-            */
-        }        
     }
-    
 }

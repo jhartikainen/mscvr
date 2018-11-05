@@ -19,16 +19,12 @@ namespace mscvr {
             var left = new GameObject("Left Eye");
             var leftCam = left.AddComponent<Camera>();
             left.transform.localPosition.Set(-0.05f, 0, 0);
-            left.transform.SetParent(root.transform);
-            /*var leftHelper = left.AddComponent<OpenVRHelper>();
-            leftHelper.eye = Valve.VR.EVREye.Eye_Left;*/
+            left.transform.SetParent(root.transform);            
 
             var right = new GameObject("Right Eye");
             var rightCam = right.AddComponent<Camera>();
             right.transform.SetParent(root.transform);
-            right.transform.localPosition.Set(0.05f, 0, 0);
-            /*var rightHelper = right.AddComponent<OpenVRHelper>();
-            rightHelper.eye = Valve.VR.EVREye.Eye_Right;*/
+            right.transform.localPosition.Set(0.05f, 0, 0);           
             
             leftRt = new RenderTexture(vpWidth, vpHeight, 0, RenderTextureFormat.ARGB32);
             leftRt.useMipMap = false;

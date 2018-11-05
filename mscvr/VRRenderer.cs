@@ -81,15 +81,9 @@ float4 frag(v2f i) : COLOR {
         private SharpDX.Direct3D11.Texture2D rightHandle;
         private Texture2D leftUnityTexture;
         private Texture2D rightUnityTexture;
-        private DeviceMultithread multithread;
-        private Material leftMat;
-        private Material rightMat;
         private bool hadError;
 
-        public static VRRenderer instance;
-
-        [DllImport("mscvr-nativehook", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void EnableMultithread(IntPtr context);
+        public static VRRenderer instance;    
 
         public VRRenderer(SharpDX.Direct3D11.Device d3d11Device, SharpDX.Direct3D11.Device unityDevice, VRRig rig) {
             instance = this;
@@ -156,31 +150,8 @@ float4 frag(v2f i) : COLOR {
             var rightView = new SharpDX.Direct3D11.ShaderResourceView(unityDevice, rightHandle, viewDesc);
 
             leftUnityTexture = Texture2D.CreateExternalTexture(w, h, TextureFormat.ARGB32, false, false, leftView.NativePointer);
-            rightUnityTexture = Texture2D.CreateExternalTexture(w, h, TextureFormat.ARGB32, false, false, rightView.NativePointer);
-
-            
-            /*unsafe {
-                ReplaceTextures(rig.leftRt.GetNativeTexturePtr().ToPointer(), leftHandle.NativePointer.ToPointer());
-            } */           
-            
-            /*leftMat = new Material(blitShader);
-            leftMat.mainTexture = leftUnityTexture;
-            
-            rightMat = new Material(blitShader);
-            rightMat.mainTexture = rightUnityTexture;*/
-        }
-
-        public void RenderEye(EVREye eye) {
-            //unityRenderer.ImmediateContext.Flush();
-            /*if (eye == EVREye.Eye_Left) {
-                unityRenderer.ImmediateContext.CopyResource(rig.leftTexture, leftHandle);
-            }
-            else {
-                unityRenderer.ImmediateContext.CopyResource(rig.rightTexture, rightHandle);
-            }
-
-            unityRenderer.ImmediateContext.Flush();*/
-        }
+            rightUnityTexture = Texture2D.CreateExternalTexture(w, h, TextureFormat.ARGB32, false, false, rightView.NativePointer);                        
+        }       
 
         public void Render() {
             if (hadError) {

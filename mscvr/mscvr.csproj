@@ -72,7 +72,6 @@
     <Compile Include="IgnoreHovering.cs" />
     <Compile Include="Interactable.cs" />
     <Compile Include="mscvr.cs" />
-    <Compile Include="OpenVRHelper.cs" />
     <Compile Include="openvr_api.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

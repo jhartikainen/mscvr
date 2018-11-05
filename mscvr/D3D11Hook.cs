@@ -75,10 +75,7 @@ namespace mscvr {
                 out device,
                 out swapChain
             );
-
-            /*var f = new Factory();
-            swapChain = new SwapChain(f, device, CreateSwapChainDescription(hwnd));
-            */
+ 
             swapChainVtable.AddRange(GetVTblAddresses(swapChain.NativePointer, DXGI_SWAPCHAIN_METHOD_COUNT));
             
             //8 = Present
