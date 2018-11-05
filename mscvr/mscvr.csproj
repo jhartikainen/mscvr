@@ -35,21 +35,25 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EasyHook">
+      <HintPath>..\packages\EasyHook.2.7.6789\lib\net35\EasyHook.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="MSCLoader">
       <HintPath>E:\Games\steam\SteamApps\common\My Summer Car\mysummercar_Data\Managed\MSCLoader.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX">
       <HintPath>..\..\..\..\SharpDX.2.6.3\Bin\DirectX11-net20\SharpDX.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="SharpDX.Direct3D11">
       <HintPath>..\..\..\..\SharpDX.2.6.3\Bin\DirectX11-net20\SharpDX.Direct3D11.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="SharpDX.DXGI">
       <HintPath>..\..\..\..\SharpDX.2.6.3\Bin\DirectX11-net20\SharpDX.DXGI.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -63,6 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="D3D11Hook.cs" />
     <Compile Include="Hand.cs" />
     <Compile Include="IgnoreHovering.cs" />
     <Compile Include="Interactable.cs" />
@@ -101,6 +106,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="openvr_api.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

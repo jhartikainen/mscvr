@@ -5,6 +5,7 @@ using Valve.VR.InteractionSystem;
 using SharpDX.DXGI;
 using System.Runtime.InteropServices;
 using System;
+using EasyHook;
 
 namespace mscvr {
     public class mscvr : Mod {
@@ -23,6 +24,7 @@ namespace mscvr {
         private VRRig vrRig;
         private VRRenderer vrRenderer;
         private Camera mainCamera;
+        private D3D11Hook hook;
 
         public override string ID => "mscvr";
         public override string Name => "MSC VR";
@@ -31,10 +33,7 @@ namespace mscvr {
 
         //Set this to true if you will be load custom assets from Assets folder.
         //This will create subfolder in Assets folder for your mod.
-        public override bool UseAssetsFolder => false;
-
-        [DllImport("mscvr-nativeplugin", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int PrintANumber();
+        public override bool UseAssetsFolder => false;       
 
         //Called when mod is loading
         public override void OnLoad() {
@@ -45,30 +44,46 @@ namespace mscvr {
             
             
             mainCamera = Camera.main;
-                        
+
+            /*ModConsole.Print(mainCamera.cullingMask);
+            mainCamera.cullingMask = ~mainCamera.cullingMask;
+
+            mainCamera.enabled = false;*/
+            
             ModConsole.Print(SystemInfo.graphicsDeviceVersion);
                             
-
+            
             System.Diagnostics.Trace.WriteLine("Initializing our own D3D11 device");
-            d3d11Device = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware);//, SharpDX.Direct3D11.DeviceCreationFlags.Debug);
+            d3d11Device = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware, SharpDX.Direct3D11.DeviceCreationFlags.Debug);            
 
+
+            hook = new D3D11Hook();
+            hook.Create();
+            
             System.Diagnostics.Trace.WriteLine("Getting RenderTarget Size");
 
             uint w = 0, h = 0;
             vrSystem.GetRecommendedRenderTargetSize(ref w, ref h);
             vrRig = new VRRig((int)w, (int)h);
-
+            
             System.Diagnostics.Trace.WriteLine("Fetching Unity D3D11 Device");
             var devChild = vrRig.leftTexture.QueryInterface<SharpDX.Direct3D11.DeviceChild>();
-            unityRenderer = devChild.Device;
+            unityRenderer = devChild.Device;            
             devChild.Dispose();
 
+            ModConsole.Print(unityRenderer.CreationFlags & SharpDX.Direct3D11.DeviceCreationFlags.SingleThreaded);
             vrRenderer = new VRRenderer(d3d11Device, unityRenderer, vrRig);
 
-            Camera.onPostRender += PostRender;
+            //Camera.onPostRender += PostRender;
+
+            hook.OnRender += HookRender;
 
             System.Diagnostics.Trace.WriteLine("All done");
             ModConsole.Print("MSCVR initialized");         
+        }
+
+        void HookRender() {
+            vrRenderer.Render();
         }
 
         void PostRender(Camera cam) {        
@@ -86,7 +101,17 @@ namespace mscvr {
         public override void FixedUpdate() {
             //ModConsole.Print(PrintANumber());
             //GL.IssuePluginEvent(1337);
-            vrRig.Move(mainCamera.transform.position, mainCamera.transform.rotation);
+
+
+
+            //vrRig.Move(mainCamera.transform.position, mainCamera.transform.rotation);
+        }
+
+        public override void Update() {
+            //NEXT: Try again with dx debugging output visible to see hwy the ptr didn't work maybe
+
+
+            //ModConsole.Print(1f / Time.deltaTime);
         }
 
         bool OpenVRInit() {
@@ -102,8 +127,8 @@ namespace mscvr {
         }
 
         ~mscvr() {
-            OpenVR.Shutdown();
-            vrRig.Dispose();
+            //OpenVR.Shutdown();
+            //vrRig.Dispose();
         }
 
         void DeviceReading(ETrackedDeviceClass deviceClass) {

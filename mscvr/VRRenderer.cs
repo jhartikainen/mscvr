@@ -4,6 +4,8 @@ using System;
 using MSCLoader;
 using SharpDX.DXGI;
 using Valve.VR;
+using System.Runtime.InteropServices;
+using SharpDX.Direct3D;
 
 namespace mscvr {    
     public class VRRenderer : IDisposable {
@@ -79,11 +81,20 @@ float4 frag(v2f i) : COLOR {
         private SharpDX.Direct3D11.Texture2D rightHandle;
         private Texture2D leftUnityTexture;
         private Texture2D rightUnityTexture;
+        private DeviceMultithread multithread;
         private Material leftMat;
         private Material rightMat;
         private bool hadError;
 
+        public static VRRenderer instance;
+
+        [DllImport("mscvr-nativehook", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void EnableMultithread(IntPtr context);
+
         public VRRenderer(SharpDX.Direct3D11.Device d3d11Device, SharpDX.Direct3D11.Device unityDevice, VRRig rig) {
+            instance = this;
+
+            
             this.rig = rig;
             device = d3d11Device;
             unityRenderer = unityDevice;
@@ -92,7 +103,6 @@ float4 frag(v2f i) : COLOR {
             bounds.vMin = bounds.uMin = 0;
             bounds.vMax = bounds.uMax = 1;
 
-            ModConsole.Print("Creating description");
             var w = rig.leftTexture.Description.Width;
             var h = rig.leftTexture.Description.Height;
             var description = new SharpDX.Direct3D11.Texture2DDescription() {
@@ -147,43 +157,79 @@ float4 frag(v2f i) : COLOR {
 
             leftUnityTexture = Texture2D.CreateExternalTexture(w, h, TextureFormat.ARGB32, false, false, leftView.NativePointer);
             rightUnityTexture = Texture2D.CreateExternalTexture(w, h, TextureFormat.ARGB32, false, false, rightView.NativePointer);
+
+            
+            /*unsafe {
+                ReplaceTextures(rig.leftRt.GetNativeTexturePtr().ToPointer(), leftHandle.NativePointer.ToPointer());
+            } */           
             
             /*leftMat = new Material(blitShader);
-            leftMat.SetTexture(0, leftUnityTexture);
+            leftMat.mainTexture = leftUnityTexture;
             
             rightMat = new Material(blitShader);
-            rightMat.SetTexture(0, rightUnityTexture);*/
+            rightMat.mainTexture = rightUnityTexture;*/
+        }
+
+        public void RenderEye(EVREye eye) {
+            //unityRenderer.ImmediateContext.Flush();
+            /*if (eye == EVREye.Eye_Left) {
+                unityRenderer.ImmediateContext.CopyResource(rig.leftTexture, leftHandle);
+            }
+            else {
+                unityRenderer.ImmediateContext.CopyResource(rig.rightTexture, rightHandle);
+            }
+
+            unityRenderer.ImmediateContext.Flush();*/
         }
 
         public void Render() {
             if (hadError) {
                 return;
-            }
+            }         
 
-            System.Diagnostics.Trace.WriteLine("Attempting to copy resource");
 
-            //unityRenderer.ImmediateContext.CopyResource(rig.leftTexture, leftHandle);
-            //unityRenderer.ImmediateContext.CopyResource(rig.rightTexture, rightHandle);
-
+            //This causes memory corruption due to multithreaded access without using the hook thing
+                        
+            unityRenderer.ImmediateContext.CopyResource(rig.leftTexture, leftHandle);
+            unityRenderer.ImmediateContext.CopyResource(rig.rightTexture, rightHandle);                        
             //unityRenderer.ImmediateContext.Flush();
+
+
 
             //Potential methods to speed this up:
             //1. Graphics.Blit
             //2. Using same method as SteamVR_Camera, eg. use material with the steamvr blit shader
             //      to which you then assign each texture at a time and render into it
 
-            RenderTexture.active = rig.leftRt;
+            /*RenderTexture.active = rig.leftRt;
             leftUnityTexture.ReadPixels(new Rect(0, 0, leftUnityTexture.width, leftUnityTexture.height), 0, 0);                       
             RenderTexture.active = rig.rightRt;
             rightUnityTexture.ReadPixels(new Rect(0, 0, rightUnityTexture.width, rightUnityTexture.height), 0, 0);
             RenderTexture.active = null;
             leftUnityTexture.Apply();
-            rightUnityTexture.Apply();
+            rightUnityTexture.Apply();*/
 
+
+            //This produces a pink screen, and white screen on HMD?
             //Graphics.Blit(rig.leftRt, leftMat);
             //Graphics.Blit(rig.rightRt, rightMat);
 
-            System.Diagnostics.Trace.WriteLine("Finished copy resource?");
+            /*Graphics.SetRenderTarget(rig.leftRt);
+            //SteamVR_Camera.blitMaterial.mainTexture = src;
+            
+            GL.PushMatrix();
+            GL.LoadOrtho();
+            SteamVR_Camera.blitMaterial.SetPass(0);
+            GL.Begin(GL.QUADS);
+            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(-1, 1, 0);
+            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(1, 1, 0);
+            GL.TexCoord2(1.0f, 1.0f); GL.Vertex3(1, -1, 0);
+            GL.TexCoord2(0.0f, 1.0f); GL.Vertex3(-1, -1, 0);
+            GL.End();
+            GL.PopMatrix();
+
+            Graphics.SetRenderTarget(null);*/
+
 
             TrackedDevicePose_t[] renderPoses = new TrackedDevicePose_t[3];
             TrackedDevicePose_t[] gamePoses = new TrackedDevicePose_t[3];

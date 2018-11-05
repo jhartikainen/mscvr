@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using MSCLoader;
 
 namespace mscvr {
 
@@ -18,11 +19,17 @@ namespace mscvr {
             var left = new GameObject("Left Eye");
             var leftCam = left.AddComponent<Camera>();
             left.transform.localPosition.Set(-0.05f, 0, 0);
+            left.transform.SetParent(root.transform);
+            /*var leftHelper = left.AddComponent<OpenVRHelper>();
+            leftHelper.eye = Valve.VR.EVREye.Eye_Left;*/
 
             var right = new GameObject("Right Eye");
             var rightCam = right.AddComponent<Camera>();
+            right.transform.SetParent(root.transform);
             right.transform.localPosition.Set(0.05f, 0, 0);
-
+            /*var rightHelper = right.AddComponent<OpenVRHelper>();
+            rightHelper.eye = Valve.VR.EVREye.Eye_Right;*/
+            
             leftRt = new RenderTexture(vpWidth, vpHeight, 0, RenderTextureFormat.ARGB32);
             leftRt.useMipMap = false;
             leftRt.Create();
@@ -32,7 +39,6 @@ namespace mscvr {
             rightRt.useMipMap = false;
             rightRt.Create();
             rightCam.targetTexture = rightRt;
-            var mat = new Material("");
 
             leftTexture = new SharpDX.Direct3D11.Texture2D(leftRt.GetNativeTexturePtr());
             rightTexture = new SharpDX.Direct3D11.Texture2D(rightRt.GetNativeTexturePtr());
